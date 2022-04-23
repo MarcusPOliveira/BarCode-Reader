@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import {
   Container,
@@ -11,37 +12,77 @@ import {
   Button,
   Label,
   ButtonTitle,
-  CodeList
+  CodeList,
 } from './styles';
-import { Text } from 'react-native';
 
-async function askUsersPermissions() {
-  const { status } = await BarCodeScanner.requestPermissionsAsync();
-  return status === "granted";
+//Interfaces para obter posições de scan (BoundingBox)
+interface BarCodePoint {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface BarCodeBounds {
+  origin: BarCodePoint;
+  size: BarCodePoint;
 }
 
 export function Home() {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(true);
+  const [productCode, setProductCode] = useState('Nada scanneado ainda');
 
+  //BoundingBox states
+  const [x, setX] = useState(0);
+  const [y, setY] = useState(0);
+  const [width, setWidth] = useState(0);
+  const [height, setHeight] = useState(0);
+
+  //Requisitando permissão à câmera
+  const askForCameraPermission = () => {
+    (async () => {
+      const { status } = await BarCodeScanner.requestPermissionsAsync();
+      setHasPermission(status === 'granted');
+    })
+  }
+
+  //Checkando permissões
   if (hasPermission === null) {
-    //  return <Text>Obtendo permissões</Text>
+    return (
+      <CameraWrapper>
+        <Label> Requisitando permissão à câmera </Label>
+        <Button>
+          <ButtonTitle onPress={() => askForCameraPermission()}> Habilitar Câmera </ButtonTitle>
+        </Button>
+      </CameraWrapper>
+    )
   }
 
   if (hasPermission === false) {
-    return <Text>Sem permissões para acessar a câmera</Text>
+    return (
+      <CameraWrapper>
+        <Label> Sem acesso à câmera </Label>
+        <Button>
+          <ButtonTitle onPress={() => askForCameraPermission()}> Habilitar Câmera </ButtonTitle>
+        </Button>
+      </CameraWrapper>
+    )
   }
 
-  if (hasPermission === true) {
+  function onBarCodeScanned(payload: { type: string, data: string, bounds: BarCodeBounds }) { //type = tipo do código (qrcode, ean, code128) e data é o código em si
+    console.log(payload)
 
-  }
+    const { origin, size } = payload.bounds;
+    setX(origin.x);
+    setY(origin.y)
+    setWidth(size.width);
+    setHeight(size.height);
 
-  function onBarCodeScanned(payload: { type: string, data: string }) { //type = tipo do código (qrcode, ean, code128) e data é o código em si
-    //pegar o data e jogar em um Text para renderizar em tela
-    console.log(payload.data)
+    setProductCode(payload.data);
   }
 
   useEffect(() => {
-    askUsersPermissions().then(setHasPermission);
+    askForCameraPermission();
   }, []);
 
   return (
@@ -54,17 +95,26 @@ export function Home() {
         <BarCodeScanner
           onBarCodeScanned={onBarCodeScanned}
           style={{
-            height: 380,
-            width: 380
+            height: 400,
+            width: 400
           }}
         />
+        <View style={{
+          position: 'absolute',
+          top: y,
+          left: x,
+          width: width,
+          height: height,
+          borderColor: 'red',
+          borderWidth: 2
+        }} />
       </CameraWrapper>
       <Content>
         <Label>
           Seu código de barras:
         </Label>
         <BarCode>
-          78910101010
+          {productCode}
         </BarCode>
         <Button>
           <ButtonTitle>
@@ -72,7 +122,7 @@ export function Home() {
           </ButtonTitle>
         </Button>
         <CodeList>
-          código aqui
+          Lista de códigos
         </CodeList>
       </Content>
     </Container>

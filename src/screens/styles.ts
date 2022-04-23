@@ -1,5 +1,4 @@
 import styled from 'styled-components/native';
-import { RectButton } from 'react-native-gesture-handler';
 
 export const Container = styled.View`
   flex: 1;
@@ -27,8 +26,11 @@ export const Title = styled.Text`
 `;
 
 export const CameraWrapper = styled.View`
-  width: 100%;
+  width: 400px;
   background-color: #000;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
 `;
 
 export const Content = styled.View`
